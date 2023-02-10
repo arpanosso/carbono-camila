@@ -1,0 +1,119 @@
+---
+output: github_document
+---
+
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  error = FALSE,
+  message = FALSE,
+  warning = FALSE,
+  comment = "#>"
+)
+```
+
+# carbono-camila
+
+```{r}
+library(tidyverse)
+library(lubridate)
+library(scales)
+library(readxl)
+library(patchwork)
+library(hrbrthemes)
+```
+
+```{r}
+dados <- read_xlsx("data/Dados Gerais.xlsx") %>% 
+  janitor::clean_names()
+dados <- dados %>% 
+  mutate(
+    cultura = str_remove(str_extract(tratamento, ".*_"),"_")
+  )
+glimpse(dados)
+```
+
+#### Gráfico de temperatura e umidade 
+
+```{r}
+clima <- read_excel("data/Dados_climáticos_completo_V2.xlsx",
+                    sheet="Planilha1") %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    ano = as.numeric(ano),
+    dia = as.numeric(dia),
+    mes = as.numeric(mes),
+    data = make_date(year=ano,day=dia,month=mes)
+  )
+glimpse(clima)
+```
+```{r}
+coeff=9
+a=1
+clima %>% filter(ano > 2014) %>% 
+  mutate(month_year = make_date(year=ano, month= mes, day=1)) %>% 
+  group_by(month_year) %>% 
+  summarise(
+    rain = sum(precipitacoa),
+    tmedia = mean(tmedia),
+    tmin =mean(tmin),
+    tmax =mean(tmax),
+  ) %>% 
+  ggplot(aes(x=month_year,y=rain)) +
+  geom_col(color="black",fill="gray")+
+  geom_line(aes(y = a + tmedia*coeff), color = "red") +
+  geom_line(aes(y = a + tmin*coeff), color = "black",lty=3) +
+  geom_line(aes(y = a + tmax*coeff), color = "black",lty=3) +
+  scale_y_continuous(
+    name = "Precipitation (mm)",
+    sec.axis = sec_axis(~ (. - a)/coeff, name="Temperature (°C)")
+  ) +
+  # scale_x_date(name = "Data",date_breaks = "12 months",
+  #               date_labels = "%Y") +
+  scale_x_date(name = "Date",date_breaks = "3 months",
+              # date_labels = "%b",
+              labels = label_date_short(format = c("%Y", "%b", NA, NA)),
+              expand = c(0.005,0.005)
+              ) +
+  theme_classic() +
+  theme(legend.background = element_rect(fill = "transparent"), 
+        legend.box.background = 
+          element_rect(fill = "transparent", colour = NA),
+        legend.key = element_rect(fill = "transparent"), 
+        legend.spacing = unit(-1, "lines"))
+  # theme(axis.text.x=element_text(angle=45))
+```
+
+
+
+
+#### Gráfico da Produção mostrando a semelhança entre os SPS
+
+#### estoque de carbono, mostrar ao longo do tempo em função do sistema de preparo e depois pelo sistema de cobertura 
+
+#### densidade do solo/ carbono orgânico/ e possivelmente DMP
+
+### finalemnte o HLIF
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
