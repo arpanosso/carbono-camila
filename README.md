@@ -124,4 +124,4 @@ clima %>% filter(ano > 2014) %>%
 
 #### densidade do solo/ carbono orgânico/ e possivelmente DMP
 
-### finalemnte o HLIF
+### finalemnte o HLIF ano 1 e 5 somente
