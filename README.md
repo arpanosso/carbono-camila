@@ -145,6 +145,31 @@ atributos <- atributos %>%
   mutate(
     cultura = str_remove(str_extract(tratamento, ".*_"),"_")
   )
+glimpse(atributos)
+#> Rows: 585
+#> Columns: 22
+#> $ ciclo            <dbl> 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,~
+#> $ tratamento       <chr> "amendoim_pd", "amendoim_pd", "amendoim_pd", "amendoi~
+#> $ cultura          <chr> "amendoim", "amendoim", "amendoim", "amendoim", "amen~
+#> $ preparo          <chr> "pd", "pd", "pd", "pd", "pd", "pd", "pd", "pd", "pd",~
+#> $ linha_entrelinha <chr> "Média_ponderada", "Média_ponderada", "Média_ponderad~
+#> $ profundidade     <chr> "0_20", "0_20", "0_20", "20_30", "20_30", "20_30", "3~
+#> $ bloco            <chr> "b1", "b2", "b3", "b1", "b2", "b3", "b1", "b2", "b3",~
+#> $ ds               <dbl> 1.541851, 1.656825, 1.490723, 1.663634, 1.663012, 1.6~
+#> $ macro            <dbl> 0.22259881, 0.15329831, 0.19500683, 0.14215579, 0.144~
+#> $ micro            <dbl> 0.2045018, 0.2310544, 0.2080318, 0.2416834, 0.2400504~
+#> $ pt               <dbl> 0.4271007, 0.3843528, 0.4030386, 0.3838392, 0.3840695~
+#> $ dp               <dbl> 2.69, 2.69, 2.69, 2.70, 2.70, 2.70, 2.69, 2.69, 2.69,~
+#> $ rp               <dbl> 1.0076667, 1.0002333, 0.9988667, 1.4013000, 1.9214000~
+#> $ dmp              <dbl> 0.7394362, 0.6215094, 0.6568675, 0.9229124, 0.9356794~
+#> $ p_resina         <dbl> 3.198333, 3.531667, 2.910000, 1.000000, 1.730000, 1.0~
+#> $ p_h              <dbl> 5.103500, 5.436167, 5.270333, 4.254000, 4.700000, 4.9~
+#> $ k                <dbl> 0.7126667, 0.7558333, 0.6550000, 0.2000000, 0.3270000~
+#> $ ca               <dbl> 14.573333, 15.406667, 14.370000, 12.460000, 9.540000,~
+#> $ mg               <dbl> 7.509167, 7.171667, 7.846667, 4.365000, 4.405000, 5.5~
+#> $ h_al             <dbl> 17.41333, 16.43167, 17.45000, 25.00000, 20.67500, 23.~
+#> $ c                <dbl> 4.712640, 5.443577, 4.704227, 4.002810, 5.348700, 4.6~
+#> $ est_c            <dbl> 15.492918, 17.443401, 15.559664, 6.941640, 9.261756, ~
 ```
 
 ``` r
@@ -192,24 +217,74 @@ densidade do solo/ carbono orgânico/ e possivelmente DMP
 
 ``` r
 atributos %>% 
-  group_by(ciclo,cultura,profundidade) %>% 
+  group_by(ciclo,preparo,profundidade) %>% 
   summarise(ds_m = mean(ds),
             n = n(),
             stde = sd(ds)/sqrt(n)
             ) %>% 
-  group_by(ciclo, cultura) %>% 
+  group_by(ciclo, preparo) %>% 
   # summarise(ds_m = mean(ds_m),
   #           stde = mean(stde)
   #           )  %>% 
-  ggplot(aes(x=ciclo, y=ds_m, fill=cultura)) +
+  ggplot(aes(x=ciclo, y=ds_m, fill=preparo)) +
   geom_col(positio = "dodge") +
   scale_fill_viridis_d() +
-  facet_wrap(~profundidade,ncol=1) +
+  facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
-                 position=position_dodge(.9))
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(1.5,1.8))+
+  theme(legend.position = "top")
 ```
 
 ![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
+atributos %>% 
+  group_by(ciclo,preparo,profundidade) %>% 
+  summarise(c_m = mean(c),
+            n = n(),
+            stde = sd(c)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, preparo) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=c_m, fill=preparo)) +
+  geom_col(positio = "dodge") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,nrow=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=c_m, ymax=c_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(3.5,8))+
+  theme(legend.position = "top")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+atributos %>% 
+  group_by(ciclo,preparo,profundidade) %>% 
+  summarise(dmp_m = mean(dmp),
+            n = n(),
+            stde = sd(dmp)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, preparo) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=dmp_m, fill=preparo)) +
+  geom_col(positio = "dodge") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,nrow=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=dmp_m, ymax=dmp_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(0.25,1))+
+  theme(legend.position = "top")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ### finalemnte o HLIF ano 1 e 5 somente

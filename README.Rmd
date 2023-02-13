@@ -131,6 +131,7 @@ atributos <- atributos %>%
   mutate(
     cultura = str_remove(str_extract(tratamento, ".*_"),"_")
   )
+glimpse(atributos)
 ```
 
 ```{r}
@@ -173,24 +174,69 @@ atributos %>%
 
 ```{r}
 atributos %>% 
-  group_by(ciclo,cultura,profundidade) %>% 
+  group_by(ciclo,preparo,profundidade) %>% 
   summarise(ds_m = mean(ds),
             n = n(),
             stde = sd(ds)/sqrt(n)
             ) %>% 
-  group_by(ciclo, cultura) %>% 
+  group_by(ciclo, preparo) %>% 
   # summarise(ds_m = mean(ds_m),
   #           stde = mean(stde)
   #           )  %>% 
-  ggplot(aes(x=ciclo, y=ds_m, fill=cultura)) +
+  ggplot(aes(x=ciclo, y=ds_m, fill=preparo)) +
   geom_col(positio = "dodge") +
   scale_fill_viridis_d() +
-  facet_wrap(~profundidade,ncol=1) +
+  facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
-                 position=position_dodge(.9))
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(1.5,1.8))+
+  theme(legend.position = "top")
 ```
 
+```{r}
+atributos %>% 
+  group_by(ciclo,preparo,profundidade) %>% 
+  summarise(c_m = mean(c),
+            n = n(),
+            stde = sd(c)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, preparo) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=c_m, fill=preparo)) +
+  geom_col(positio = "dodge") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,nrow=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=c_m, ymax=c_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(3.5,8))+
+  theme(legend.position = "top")
+```
+
+```{r}
+atributos %>% 
+  group_by(ciclo,preparo,profundidade) %>% 
+  summarise(dmp_m = mean(dmp),
+            n = n(),
+            stde = sd(dmp)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, preparo) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=dmp_m, fill=preparo)) +
+  geom_col(positio = "dodge") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,nrow=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=dmp_m, ymax=dmp_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(0.25,1))+
+  theme(legend.position = "top")
+```
 
 ### finalemnte o HLIF ano 1 e 5 somente
 
