@@ -25,16 +25,6 @@ library(patchwork)
 library(hrbrthemes)
 ```
 
-```{r}
-dados <- read_xlsx("data/Dados Gerais.xlsx") %>% 
-  janitor::clean_names()
-dados <- dados %>% 
-  mutate(
-    cultura = str_remove(str_extract(tratamento, ".*_"),"_")
-  )
-glimpse(dados)
-```
-
 #### Gráfico de temperatura e umidade 
 
 ```{r}
@@ -47,8 +37,9 @@ clima <- read_excel("data/Dados_climáticos_completo_V2.xlsx",
     mes = as.numeric(mes),
     data = make_date(year=ano,day=dia,month=mes)
   )
-glimpse(clima)
 ```
+
+
 ```{r}
 coeff=9
 a=1
@@ -85,15 +76,121 @@ clima %>% filter(ano > 2014) %>%
         legend.spacing = unit(-1, "lines"))
   # theme(axis.text.x=element_text(angle=45))
 ```
-
-
-
-
 #### Gráfico da Produção mostrando a semelhança entre os SPS
+```{r}
+prod <- read_xlsx("data/Qualid.Industrial e prod. 1, 2 ,3,  4 e 5.xlsx") %>% 
+  janitor::clean_names()
+glimpse(prod)
+```
+
+```{r}
+prod %>% 
+  group_by(sps,colheita) %>% 
+  summarise(
+    prod_mean = mean(producao),
+    n = n(),
+    stde = sd(producao)/sqrt(n)
+  ) %>% 
+  ggplot(aes(x=colheita, y=prod_mean, fill=sps)) +
+  geom_col(position="dodge") +
+  scale_fill_viridis_d() +
+  theme_classic()+
+  geom_errorbar(aes(ymin=prod_mean, ymax=prod_mean+stde), width=.2,
+                 position=position_dodge(.9))
+```
+
+
+### Boxplot para estudo de possíveis *ouliers*
+```{r}
+prod %>% 
+  group_by(sps, colheita) %>% 
+  ggplot(aes(x=as_factor(colheita), y=producao, fill=sps)) +
+  geom_boxplot() +
+  # facet_wrap(~sps)+
+  scale_fill_viridis_d() +
+  theme_classic()
+```
+```{r}
+prod %>% 
+  group_by(sps, colheita) %>% 
+  ggplot(aes(x=producao, fill=sps)) +
+  geom_density(alpha=.5) +
+  facet_wrap(~colheita,ncol=3)+
+  scale_fill_viridis_d() +
+  theme_classic()+
+  theme(legend.position = "bottom")
+```
+
 
 #### estoque de carbono, mostrar ao longo do tempo em função do sistema de preparo e depois pelo sistema de cobertura 
 
+```{r}
+atributos <- read_xlsx("data/Dados Gerais.xlsx") %>% 
+  janitor::clean_names()
+atributos <- atributos %>% 
+  mutate(
+    cultura = str_remove(str_extract(tratamento, ".*_"),"_")
+  )
+```
+
+```{r}
+atributos %>% 
+  group_by(ciclo,preparo,profundidade) %>% 
+  summarise(EstC = mean(est_c),
+            n = n(),
+            stde = sd(est_c)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, preparo) %>% 
+  summarise(EstC = sum(EstC),
+            stde = sum(stde)
+            )  %>% 
+  ggplot(aes(x=ciclo, y=EstC, fill=preparo)) +
+  geom_col(position="dodge") +
+  scale_fill_viridis_d() +
+  theme_classic()+
+  geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
+                 position=position_dodge(.9))
+```
+```{r}
+atributos %>% 
+  group_by(ciclo,cultura,profundidade) %>% 
+  summarise(EstC = mean(est_c),
+            n = n(),
+            stde = sd(est_c)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, cultura) %>% 
+  summarise(EstC = sum(EstC),
+            stde = sum(stde)
+            )  %>% 
+  ggplot(aes(x=ciclo, y=EstC, fill=cultura)) +
+  geom_col(position="dodge") +
+  scale_fill_viridis_d() +
+  theme_classic()+
+  geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
+                 position=position_dodge(.9))
+```
 #### densidade do solo/ carbono orgânico/ e possivelmente DMP
+
+```{r}
+atributos %>% 
+  group_by(ciclo,cultura,profundidade) %>% 
+  summarise(ds_m = mean(ds),
+            n = n(),
+            stde = sd(ds)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, cultura) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=ds_m, fill=cultura)) +
+  geom_col(positio = "dodge") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,ncol=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
+                 position=position_dodge(.9))
+```
+
 
 ### finalemnte o HLIF ano 1 e 5 somente
 
