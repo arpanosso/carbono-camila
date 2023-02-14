@@ -240,23 +240,155 @@ atributos %>%
 
 ### finalemnte o HLIF ano 1 e 5 somente
 
+```{r}
+quali_c <- read_xlsx("data/Grau de Humifica__o.xlsx") %>% 
+  janitor::clean_names() %>% 
+  mutate(
+    sps = str_to_lower(sps),
+    ciclo = ifelse(ciclo==2,5,ciclo)
+  )
+glimpse(quali_c)
+glimpse(atributos)
+unique(quali_c$sps) %>% sort() == unique(atributos$preparo) %>% sort()
+atributos <- atributos %>% 
+  mutate(cultura = ifelse(cultura=="sem cobertura", "testemunha",cultura))
+unique(quali_c$cobertura)  ## <+ ARRUMAR AQUI
+unique(atributos$cultura) %>% sort()## <== ARRUMAR AQUI
+
+```
+
+
+Tentativa de modelagem para 0-0.05 m
+
+```{r}
+atr_c <- atributos %>% filter(profundidade == "0_20", ciclo == 5,bloco != "b2") %>% 
+  select(ciclo, cultura,preparo,bloco,c)
+hum_c <- quali_c %>% filter(prof == "0.0-0.05", ciclo == 5) %>% 
+  group_by(ciclo, cobertura, sps, bloco) %>% 
+  summarise( c_mean = mean(as.numeric(c),na.rm=TRUE)) %>% 
+  mutate(bloco = str_to_lower(bloco),
+         cobertura = str_to_lower(cobertura)) %>% 
+  ungroup()
+
+names(hum_c) <- c("ciclo","cultura","preparo","bloco","c_0a5" )
+names(hum_c) == names(atr_c)
+
+df_0a5 <- left_join(atr_c,hum_c,by=c("ciclo","cultura","preparo","bloco"))
+lm(c_0a5 ~ c, data = df_0a5) %>% summary()
+```
+```{r}
+a0 <- -1.8524
+b0 <- 1.7778
+df_0a5 %>% 
+  ggplot(aes(c,c_0a5)) +
+  geom_point()
+```
+
+
+Tentativa de modelagem 0.05-0.10 m
+
+```{r}
+atr_c <- atributos %>% filter(profundidade == "0_20", ciclo == 5,bloco != "b2") %>% 
+  select(ciclo, cultura,preparo,bloco,c)
+hum_c <- quali_c %>% filter(prof == "0.05-0.10", ciclo == 5) %>% 
+  group_by(ciclo, cobertura, sps, bloco) %>% 
+  summarise( c_mean = mean(as.numeric(c),na.rm=TRUE)) %>% 
+  mutate(bloco = str_to_lower(bloco),
+         cobertura = str_to_lower(cobertura)) %>% 
+  ungroup()
+
+names(hum_c) <- c("ciclo","cultura","preparo","bloco","c_5a10" )
+names(hum_c) == names(atr_c)
+
+df_5a10 <- left_join(atr_c,hum_c,by=c("ciclo","cultura","preparo","bloco"))
+lm(c_5a10 ~ c, data = df_5a10) %>% summary()
+```
+
+```{r}
+a5 <- 0.00261
+b5 <- 0.90483
+df_5a10 %>% 
+  ggplot(aes(c,c_5a10)) +
+  geom_point()
+```
+
+
+```{r}
+atr_c_1 <- atributos %>% filter(profundidade == "0_20", ciclo == 1,bloco != "b2") %>% 
+  select(ciclo, cultura,preparo,bloco,c)
+
+quali_c_est <- quali_c %>% filter(ciclo==1) %>% 
+  select(ciclo, cobertura,sps,posicao,bloco,prof,c,alif,hlif) 
+names(quali_c_est)<-c("ciclo","cultura","preparo","posicao","bloco","prof",
+                      "c_est","alif","hlif" ) 
+quali_c_est <- quali_c_est %>% 
+  group_by(ciclo,cultura,preparo,bloco,prof) %>% 
+  summarise(c_est=NA,
+         alif = mean(alif),
+         hlif=NA) %>% 
+  mutate(
+    cultura = str_to_lower(cultura),
+    bloco = str_to_lower(bloco)
+  )
+atr_c_1 %>%  names() 
+quali_c_est %>% names()
+
+d_aux <- left_join(quali_c_est, atr_c_1, by=c("ciclo","cultura","preparo","bloco")) %>% 
+  mutate(c_est = ifelse(prof == "0.0-0.05",a0+b0*c,a5+b5*c),
+         hlif = alif/c_est) %>% 
+  select(ciclo, cultura,preparo,bloco,prof,c_est,hlif)
+dfinal<-quali_c %>% 
+  mutate(cobertura = str_to_lower(cobertura),
+         bloco = str_to_lower(bloco)) %>% 
+  rename(cultura = cobertura, preparo=sps)
+
+dfinal<-left_join(dfinal, d_aux, by=c("ciclo","cultura","preparo","bloco","prof")) %>% 
+  mutate(
+    c = as.numeric(ifelse(c == "NA",c_est,c)),
+    hlif.x = as.numeric(ifelse(hlif.x == "NA",hlif.y,hlif.x))
+  ) %>% 
+  select(ciclo,cultura,preparo,posicao,bloco, prof, c,hlif.x) %>% 
+  rename(hlif=hlif.x) %>% 
+  group_by(ciclo,cultura,preparo,bloco, prof) %>% 
+  summarise(c=mean(c),
+            hlif=mean(hlif))
+```
+
+
+```{r}
+dfinal %>% 
+  group_by(ciclo, preparo, prof) %>% 
+  summarise(c = mean(c),
+            hlif_m = mean(hlif),
+            n=n(),
+            stde = sd(hlif)/sqrt(n)) %>%
+  group_by(ciclo,preparo) %>% 
+  ggplot(aes(as.factor(ciclo),hlif_m,fill=preparo)) +
+  geom_col(positio="dodge") +
+  facet_wrap(~prof,nrow=1)+
+  scale_fill_viridis_d()+
+  theme_classic() +
+  geom_errorbar(aes(ymin=hlif_m, ymax=hlif_m+stde), width=.2,
+                position=position_dodge(.9))
+
+```
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+```{r}
+dfinal %>% 
+  group_by(ciclo, cultura, prof) %>% 
+  summarise(c = mean(c),
+            hlif_m = mean(hlif),
+            n = n(),
+            stde = sd(hlif)/sqrt(n)) %>% 
+  ggplot(aes(as.factor(ciclo),hlif_m,fill=cultura)) +
+  geom_col(position="dodge") +
+  facet_wrap(~prof)+
+  scale_fill_viridis_d()+
+  theme_classic() +
+  geom_errorbar(aes(ymin=hlif_m, ymax=hlif_m+stde), width=.2,
+                position=position_dodge(.9))
+  
+```
 
