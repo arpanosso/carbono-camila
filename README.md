@@ -29,6 +29,8 @@ clima <- read_excel("data/Dados_climáticos_completo_V2.xlsx",
 ``` r
 coeff=9
 a=1
+Sys.setlocale("LC_ALL", "English")
+#> [1] "LC_COLLATE=English_United States.1252;LC_CTYPE=English_United States.1252;LC_MONETARY=English_United States.1252;LC_NUMERIC=C;LC_TIME=English_United States.1252"
 clima %>% filter(ano > 2014) %>% 
   mutate(month_year = make_date(year=ano, month= mes, day=1)) %>% 
   group_by(month_year) %>% 
@@ -49,7 +51,7 @@ clima %>% filter(ano > 2014) %>%
   ) +
   # scale_x_date(name = "Data",date_breaks = "12 months",
   #               date_labels = "%Y") +
-  scale_x_date(name = "Date",date_breaks = "3 months",
+  scale_x_date(name = "",date_breaks = "3 months",
               # date_labels = "%b",
               labels = label_date_short(format = c("%Y", "%b", NA, NA)),
               expand = c(0.005,0.005)
@@ -100,7 +102,7 @@ prod %>%
     stde = sd(producao)/sqrt(n)
   ) %>% 
   ggplot(aes(x=colheita, y=prod_mean, fill=sps)) +
-  geom_col(position="dodge") +
+  geom_col(position="dodge",color="black") +
   scale_fill_viridis_d() +
   theme_classic()+
   geom_errorbar(aes(ymin=prod_mean, ymax=prod_mean+stde), width=.2,
@@ -109,7 +111,7 @@ prod %>%
 
 ![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
-### Boxplot para estudo de possíveis *ouliers*
+### Boxplot para estudo de possíveis *outliers*
 
 ``` r
 prod %>% 
@@ -184,14 +186,62 @@ atributos %>%
             stde = sum(stde)
             )  %>% 
   ggplot(aes(x=ciclo, y=EstC, fill=preparo)) +
+  geom_col(position="dodge", color="black") +
+  scale_fill_viridis_d() +
+  theme_classic()+
+  geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
+                 position=position_dodge(.9)) +
+  labs(x="Year", 
+       y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
+       fill = "")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+atributos %>% 
+  group_by(ciclo,tratamento,profundidade) %>% 
+  summarise(EstC = mean(est_c),
+            n = n(),
+            stde = sd(est_c)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, tratamento) %>% 
+  summarise(EstC = sum(EstC),
+            stde = sum(stde)
+            )  %>% 
+  ggplot(aes(x=ciclo, y=EstC, fill=tratamento)) +
   geom_col(position="dodge") +
   scale_fill_viridis_d() +
   theme_classic()+
   geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
-                 position=position_dodge(.9))
+                 position=position_dodge(.9)) +
+  labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+atributos %>% 
+  group_by(ciclo,cultura, preparo,profundidade) %>% 
+  summarise(EstC = mean(est_c),
+            n = n(),
+            stde = sd(est_c)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, preparo, cultura) %>% 
+  summarise(EstC = sum(EstC),
+            stde = sum(stde)
+            )  %>% 
+  ggplot(aes(x=ciclo, y=EstC, fill=preparo)) +
+  geom_col(position="dodge") +
+  scale_fill_viridis_d() +
+  theme_classic()+
+  facet_wrap(~cultura) +
+  geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
+                 position=position_dodge(.9)) +
+  labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -205,14 +255,14 @@ atributos %>%
             stde = sum(stde)
             )  %>% 
   ggplot(aes(x=ciclo, y=EstC, fill=cultura)) +
-  geom_col(position="dodge") +
+  geom_col(position="dodge", color="black") +
   scale_fill_viridis_d() +
   theme_classic()+
   geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
                  position=position_dodge(.9))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- --> \####
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- --> \####
 densidade do solo/ carbono orgânico/ e possivelmente DMP
 
 ``` r
@@ -227,7 +277,7 @@ atributos %>%
   #           stde = mean(stde)
   #           )  %>% 
   ggplot(aes(x=ciclo, y=ds_m, fill=preparo)) +
-  geom_col(positio = "dodge") +
+  geom_col(positio = "dodge", color="black") +
   scale_fill_viridis_d() +
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
@@ -237,7 +287,31 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+atributos %>% 
+  group_by(ciclo,cultura,profundidade) %>% 
+  summarise(ds_m = mean(ds),
+            n = n(),
+            stde = sd(ds)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, cultura) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=ds_m, fill=cultura)) +
+  geom_col(positio = "dodge", color="black") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,nrow=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(1.5,1.8))+
+  theme(legend.position = "top")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -251,7 +325,7 @@ atributos %>%
   #           stde = mean(stde)
   #           )  %>% 
   ggplot(aes(x=ciclo, y=c_m, fill=preparo)) +
-  geom_col(positio = "dodge") +
+  geom_col(positio = "dodge", color="black") +
   scale_fill_viridis_d() +
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
@@ -261,7 +335,31 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+
+``` r
+atributos %>% 
+  group_by(ciclo,cultura,profundidade) %>% 
+  summarise(c_m = mean(c),
+            n = n(),
+            stde = sd(c)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, cultura) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=c_m, fill=cultura)) +
+  geom_col(positio = "dodge", color="black") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,nrow=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=c_m, ymax=c_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(3.5,8))+
+  theme(legend.position = "top")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -275,7 +373,31 @@ atributos %>%
   #           stde = mean(stde)
   #           )  %>% 
   ggplot(aes(x=ciclo, y=dmp_m, fill=preparo)) +
-  geom_col(positio = "dodge") +
+  geom_col(positio = "dodge", color="black") +
+  scale_fill_viridis_d() +
+  facet_wrap(~profundidade,nrow=1) +
+  theme_classic()+
+  geom_errorbar(aes(ymin=dmp_m, ymax=dmp_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  coord_cartesian(ylim=c(0.25,1.5))+
+  theme(legend.position = "top")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+
+``` r
+atributos %>% 
+  group_by(ciclo,cultura,profundidade) %>% 
+  summarise(dmp_m = mean(dmp),
+            n = n(),
+            stde = sd(dmp)/sqrt(n)
+            ) %>% 
+  group_by(ciclo, cultura) %>% 
+  # summarise(ds_m = mean(ds_m),
+  #           stde = mean(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=dmp_m, fill=cultura)) +
+  geom_col(positio = "dodge", color="black") +
   scale_fill_viridis_d() +
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
@@ -285,9 +407,9 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
-### finalemnte o HLIF ano 1 e 5 somente
+### finalmente o HLIF ano 1 e 5 somente
 
 ``` r
 quali_c <- read_xlsx("data/Grau de Humifica__o.xlsx") %>% 
@@ -391,7 +513,7 @@ df_0a5 %>%
   geom_point()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 Tentativa de modelagem 0.05-0.10 m
 
@@ -439,7 +561,7 @@ df_5a10 %>%
   geom_point()
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
 atr_c_1 <- atributos %>% filter(profundidade == "0_20", ciclo == 1,bloco != "b2") %>% 
@@ -494,7 +616,7 @@ dfinal %>%
             stde = sd(hlif)/sqrt(n)) %>%
   group_by(ciclo,preparo) %>% 
   ggplot(aes(as.factor(ciclo),hlif_m,fill=preparo)) +
-  geom_col(positio="dodge") +
+  geom_col(positio="dodge", color="black") +
   facet_wrap(~prof,nrow=1)+
   scale_fill_viridis_d()+
   theme_classic() +
@@ -502,7 +624,7 @@ dfinal %>%
                 position=position_dodge(.9))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 dfinal %>% 
@@ -512,7 +634,7 @@ dfinal %>%
             n = n(),
             stde = sd(hlif)/sqrt(n)) %>% 
   ggplot(aes(as.factor(ciclo),hlif_m,fill=cultura)) +
-  geom_col(position="dodge") +
+  geom_col(position="dodge", color="black") +
   facet_wrap(~prof)+
   scale_fill_viridis_d()+
   theme_classic() +
@@ -520,4 +642,4 @@ dfinal %>%
                 position=position_dodge(.9))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
