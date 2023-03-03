@@ -53,30 +53,29 @@ clima %>% filter(ano > 2014) %>%
     tmin =mean(tmin),
     tmax =mean(tmax),
   ) %>% 
-  ggplot(aes(x=month_year,y=rain)) +
-  geom_col(color="black",fill="gray")+
+  mutate(lg = "gray") %>% 
+  ggplot(aes(x=month_year,y=rain,fill=lg)) +
+  geom_col(color="black") +
   geom_line(aes(y = a + tmedia*coeff), color = "red") +
-  geom_line(aes(y = a + tmin*coeff), color = "black",lty=3) +
-  geom_line(aes(y = a + tmax*coeff), color = "black",lty=3) +
   scale_y_continuous(
     name = "Precipitation (mm)",
-    sec.axis = sec_axis(~ (. - a)/coeff, name="Temperature (°C)")
+    sec.axis = sec_axis(~ (. - a)/coeff, name="Temperature (°C)"),
   ) +
-  # scale_x_date(name = "Data",date_breaks = "12 months",
-  #               date_labels = "%Y") +
-  scale_x_date(name = "",date_breaks = "3 months",
+    scale_x_date(name = "",date_breaks = "3 months",
               # date_labels = "%b",
               labels = label_date_short(format = c("%Y", "%b", NA, NA)),
               expand = c(0.005,0.005)
-              ) +
-  theme_classic() +
-  theme(legend.background = element_rect(fill = "transparent"), 
-        legend.box.background = 
-          element_rect(fill = "transparent", colour = NA),
-        legend.key = element_rect(fill = "transparent"), 
-        legend.spacing = unit(-1, "lines"))
-  # theme(axis.text.x=element_text(angle=45))
+              )+
+  theme_bw() +
+  theme(legend.title = element_text(size=1),
+        legend.position = "top") +
+  scale_fill_manual(name= NULL,
+                    values = c(" Precipitation   " = "darkgrey",
+                               " Temperature" = "red"))
 ```
+
+
+
 #### Gráfico da Produção mostrando a semelhança entre os SPS
 ```{r}
 prod <- read_xlsx("data/Qualid.Industrial e prod. 1, 2 ,3,  4 e 5.xlsx") %>% 
@@ -99,6 +98,14 @@ prod %>%
   geom_errorbar(aes(ymin=prod_mean, ymax=prod_mean+stde), width=.2,
                  position=position_dodge(.9))
 ```
+```{r}
+trat <- prod %>% pull(sps)
+y <- prod %>% pull(producao)
+bloco <- prod %>% pull(bloco)
+ciclo <- prod %>% pull(colheita)
+
+ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"))
+```
 
 
 ### Boxplot para estudo de possíveis *outliers*
@@ -119,7 +126,8 @@ prod %>%
   facet_wrap(~colheita,ncol=3)+
   scale_fill_viridis_d() +
   theme_classic()+
-  theme(legend.position = "bottom")
+  theme(legend.position = "bottom")+
+  labs(fill="")
 ```
 
 
@@ -155,6 +163,22 @@ atributos %>%
   labs(x="Year", 
        y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
        fill = "")
+```
+
+```{r}
+atrr <- atributos %>% 
+  group_by(ciclo,cultura,preparo,bloco) %>% 
+  summarise(est_c=sum(est_c))
+```
+
+
+```{r}
+trat <- atrr %>% pull(preparo)
+y <- atrr %>% pull(est_c)
+bloco <- atrr %>% pull(bloco)
+ciclo <- atrr %>% pull(ciclo)
+
+ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"))
 ```
 
 ```{r}
@@ -242,6 +266,23 @@ atributos %>%
 ```
 
 ```{r}
+atrr <- atributos %>% filter(profundidade == "30_70") %>% 
+  group_by(ciclo,cultura,preparo,bloco) %>% 
+  summarise(ds=mean(ds))
+```
+
+
+```{r}
+trat <- atrr %>% pull(preparo)
+y <- atrr %>% pull(ds)
+bloco <- atrr %>% pull(bloco)
+ciclo <- atrr %>% pull(ciclo)
+
+ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"),sigF = .15,sigT=.15,mcomp = "tukey")
+```
+
+
+```{r}
 atributos %>% 
   group_by(ciclo,cultura,profundidade) %>% 
   summarise(ds_m = mean(ds),
@@ -283,6 +324,23 @@ atributos %>%
                  position=position_dodge(.9)) +
   coord_cartesian(ylim=c(3.5,8))+
   theme(legend.position = "top")
+```
+
+
+```{r}
+atrr <- atributos %>% filter(profundidade == "30_70") %>%  
+  group_by(ciclo,cultura,preparo,bloco) %>% 
+  summarise(c=sum(c))
+```
+
+
+```{r}
+trat <- atrr %>% pull(preparo)
+y <- atrr %>% pull(c)
+bloco <- atrr %>% pull(bloco)
+ciclo <- atrr %>% pull(ciclo)
+
+ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"),sigF=0.15,sigT=0.15)
 ```
 
 ```{r}
@@ -397,7 +455,8 @@ a0 <- -1.8524
 b0 <- 1.7778
 df_0a5 %>% 
   ggplot(aes(c,c_0a5)) +
-  geom_point()
+  geom_point()+
+    stat_smooth(method = "lm", formula = y ~poly(x,1,raw=TRUE),se=FALSE)
 ```
 
 
@@ -417,15 +476,19 @@ names(hum_c) <- c("ciclo","cultura","preparo","bloco","c_5a10" )
 names(hum_c) == names(atr_c)
 
 df_5a10 <- left_join(atr_c,hum_c,by=c("ciclo","cultura","preparo","bloco"))
-lm(c_5a10 ~ c, data = df_5a10) %>% summary()
+lm(c_5a10 ~ c + c2 +c3, data = df_5a10 %>% 
+     mutate(c2 = c^2,c3=c^3)) %>% summary()
 ```
 
 ```{r}
-a5 <- 0.00261
-b5 <- 0.90483
+a5 <- 65.17418
+b5 <- -26.71487 
+c5 <-  3.81763
+d5 <- -0.17183
 df_5a10 %>% 
   ggplot(aes(c,c_5a10)) +
-  geom_point()
+  geom_point()+
+  stat_smooth(method = "lm", formula = y ~poly(x,3,raw=TRUE),se=FALSE)
 ```
 
 
@@ -450,7 +513,7 @@ atr_c_1 %>%  names()
 quali_c_est %>% names()
 
 d_aux <- left_join(quali_c_est, atr_c_1, by=c("ciclo","cultura","preparo","bloco")) %>% 
-  mutate(c_est = ifelse(prof == "0.0-0.05",a0+b0*c,a5+b5*c),
+  mutate(c_est = ifelse(prof == "0.0-0.05",a0+b0*c,a5+b5*c+c5*c^2+d5*c^3),
          hlif = alif/c_est) %>% 
   select(ciclo, cultura,preparo,bloco,prof,c_est,hlif)
 dfinal<-quali_c %>% 
@@ -485,7 +548,8 @@ dfinal %>%
   scale_fill_viridis_d()+
   theme_classic() +
   geom_errorbar(aes(ymin=hlif_m, ymax=hlif_m+stde), width=.2,
-                position=position_dodge(.9))
+                position=position_dodge(.9))+
+  labs(fill="",x="Ciclo")
 
 ```
 
@@ -499,12 +563,30 @@ dfinal %>%
             n = n(),
             stde = sd(hlif)/sqrt(n)) %>% 
   ggplot(aes(as.factor(ciclo),hlif_m,fill=cultura)) +
-  geom_col(position="dodge", color="black") +
+  geom_col(position="dodge",color="black") +
   facet_wrap(~prof)+
   scale_fill_viridis_d()+
   theme_classic() +
   geom_errorbar(aes(ymin=hlif_m, ymax=hlif_m+stde), width=.2,
-                position=position_dodge(.9))
+                position=position_dodge(.9))+
+  labs(fill="",x="Ciclo")
   
 ```
 
+```{r}
+dfinal %>% 
+  group_by(ciclo, preparo) %>% 
+  summarise(c = mean(c),
+            hlif_m = mean(hlif),
+            n = n(),
+            stde = sd(hlif)/sqrt(n)) %>% 
+  ggplot(aes(as.factor(ciclo),hlif_m,fill=preparo)) +
+  geom_col(position="dodge",color="black") +
+  # facet_wrap(~prof)+
+  scale_fill_viridis_d()+
+  theme_classic() +
+  geom_errorbar(aes(ymin=hlif_m, ymax=hlif_m+stde), width=.2,
+                position=position_dodge(.9))+
+  labs(fill="",x="Ciclo")
+  
+```
