@@ -247,6 +247,33 @@ atributos %>%
 ![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 ``` r
+atributos %>% 
+  group_by(ciclo,profundidade) %>% 
+  summarise(EstC = mean(est_c),
+            n = n(),
+            stde = sd(est_c)/sqrt(n)
+            ) %>% 
+  # group_by(ciclo, preparo) %>% 
+  # summarise(EstC = sum(EstC),
+  #           stde = sum(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=EstC, color=profundidade,
+             shape=profundidade)) +
+  #geom_col(position="dodge", color="black") +
+  #scale_fill_viridis_d() +
+  geom_line() +
+  geom_point() + 
+  theme_classic()+
+  # geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
+  #                position=position_dodge(.9)) +
+  labs(x="Year", 
+       y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
+       fill = "")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
+``` r
 atrr <- atributos %>% 
   group_by(ciclo,cultura,preparo,bloco) %>% 
   summarise(est_c=sum(est_c))
@@ -258,7 +285,8 @@ y <- atrr %>% pull(est_c)
 bloco <- atrr %>% pull(bloco)
 ciclo <- atrr %>% pull(ciclo)
 
-ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"))
+ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"),
+                     sigF = 0.1, sigT=0.15)
 #> ------------------------------------------------------------------------
 #> Legenda:
 #> FATOR 1 (parcela):  sps 
@@ -282,26 +310,143 @@ ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"))
 #> CV 1 = 6.348454 %
 #> CV 2 = 9.855928 %
 #> 
-#> Interacao nao significativa: analisando os efeitos simples
+#> 
+#> 
+#> Interacao significativa: desdobrando a interacao
 #> ------------------------------------------------------------------------
-#> sps
-#> De acordo com o teste F, as medias desse fator sao estatisticamente iguais.
+#> 
+#> Desdobrando  sps  dentro de cada nivel de  ciclo 
 #> ------------------------------------------------------------------------
-#>   Niveis   Medias
-#> 1     cm 59.31323
-#> 2     pc 60.27196
-#> 3     pd 58.95937
-#> 4     pp 59.42543
+#>                      GL        SQ         QM         Fc valor.p
+#> sps : ciclo 1    3.0000 11805.052 3935.01745  130.40876       0
+#> sps : ciclo 2    3.0000 19477.316 6492.43876 215.163185       0
+#> sps : ciclo 3    3.0000 18856.908 6285.63595 208.309619       0
+#> sps : ciclo 4    3.0000 19970.967 6656.98907 220.616477       0
+#> sps : ciclo 5    3.0000 18990.472 6330.15720  209.78508       0
+#> Erro combinado 156.5588  4724.082   30.17449                   
 #> ------------------------------------------------------------------------
-#> ciclo
+#> 
+#> 
+#>  sps dentro de ciclo 1
+#> ------------------------------------------------------------------------
 #> Teste de Tukey
 #> ------------------------------------------------------------------------
 #> Grupos Tratamentos Medias
-#> a     4   63.77693 
-#> ab    2   62.72687 
-#> ab    3   60.62307 
-#>  b    5   59.36773 
-#>   c   1   50.0685 
+#> a     pc      55.0253 
+#> ab    pp      52.98847 
+#>  b    pd      48.50428 
+#>  b    cm      47.47354 
+#> ------------------------------------------------------------------------
+#> 
+#>  sps dentro de ciclo 2
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     pc      64.40943 
+#> a     cm      63.85286 
+#> a     pp      62.19025 
+#> a     pd      61.71686 
+#> ------------------------------------------------------------------------
+#> 
+#>  sps dentro de ciclo 3
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     cm      62.77387 
+#> a     pd      61.24308 
+#> a     pc      60.2368 
+#> a     pp      57.94881 
+#> ------------------------------------------------------------------------
+#> 
+#>  sps dentro de ciclo 4
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     pc      66.23907 
+#> a     pp      64.97264 
+#> a     cm      64.23296 
+#> a     pd      61.50966 
+#> ------------------------------------------------------------------------
+#> 
+#>  sps dentro de ciclo 5
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     pd      61.82296 
+#> ab    pp      59.02697 
+#> ab    cm      58.2329 
+#>  b    pc      55.44922 
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#> Desdobrando  ciclo  dentro de cada nivel de  sps 
+#> ------------------------------------------------------------------------
+#>                  GL        SQ        QM        Fc  valor.p
+#> ciclo : sps cm    4 2377.6000 594.40000 17.393602        0
+#> ciclo : sps pc    4  310.5373  77.63433  2.271771 0.063621
+#> ciclo : sps pd    4 1641.9851 410.49628 12.012128        0
+#> ciclo : sps pp    4  986.2729 246.56822  7.215191  2.2e-05
+#> Erro b          167 5706.9720  34.17348                   
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#>  ciclo dentro de sps cm
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     4   64.23296 
+#> a     2   63.85286 
+#> ab    3   62.77387 
+#>  b    5   58.2329 
+#>   c   1   47.47354 
+#> ------------------------------------------------------------------------
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#>  ciclo dentro de sps pc
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     4   66.23907 
+#> ab    2   64.40943 
+#> ab    3   60.2368 
+#> ab    5   55.44922 
+#>  b    1   55.0253 
+#> ------------------------------------------------------------------------
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#>  ciclo dentro de sps pd
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     5   61.82296 
+#> a     2   61.71686 
+#> a     4   61.50966 
+#> a     3   61.24308 
+#>  b    1   48.50428 
+#> ------------------------------------------------------------------------
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#>  ciclo dentro de sps pp
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     4   64.97264 
+#> ab    2   62.19025 
+#>  b    5   59.02697 
+#>  bc   3   57.94881 
+#>   c   1   52.98847 
+#> ------------------------------------------------------------------------
 #> ------------------------------------------------------------------------
 ```
 
@@ -325,7 +470,7 @@ atributos %>%
   labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -348,7 +493,7 @@ atributos %>%
   labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -369,7 +514,7 @@ atributos %>%
                  position=position_dodge(.9))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- --> \####
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- --> \####
 densidade do solo/ carbono orgânico/ e possivelmente DMP
 
 ``` r
@@ -394,7 +539,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% filter(profundidade == "30_70") %>% 
@@ -590,7 +735,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -614,7 +759,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% filter(profundidade == "30_70") %>%  
@@ -812,7 +957,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -836,7 +981,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -860,7 +1005,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ### finalmente o HLIF ano 1 e 5 somente
 
@@ -967,7 +1112,7 @@ df_0a5 %>%
     stat_smooth(method = "lm", formula = y ~poly(x,1,raw=TRUE),se=FALSE)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
 
 Tentativa de modelagem 0.05-0.10 m
 
@@ -1022,7 +1167,7 @@ df_5a10 %>%
   stat_smooth(method = "lm", formula = y ~poly(x,3,raw=TRUE),se=FALSE)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 atr_c_1 <- atributos %>% filter(profundidade == "0_20", ciclo == 1,bloco != "b2") %>% 
@@ -1086,7 +1231,7 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ``` r
 dfinal %>% 
@@ -1105,7 +1250,7 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
 
 ``` r
 dfinal %>% 
@@ -1124,4 +1269,4 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
