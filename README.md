@@ -186,6 +186,290 @@ prod %>%
 
 ![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
+#### Estoque de Carbono Pastagem
+
+``` r
+estCpasto <- read_excel("data/estoque-pasto1.xlsx", na = "NA") %>% 
+  janitor::clean_names()
+glimpse(estCpasto)
+#> Rows: 1,965
+#> Columns: 12
+#> $ ciclo               <dbl> 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,~
+#> $ planta_de_cobertura <chr> "Pasto", "Pasto", "Pasto", "Pasto", "Pasto", "Past~
+#> $ sps                 <chr> "pasto", "pasto", "pasto", "pasto", "pasto", "past~
+#> $ linha_entrelinha    <chr> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~
+#> $ profundidade        <chr> "00 - 10", "00 - 10", "00 - 10", "10 - 20", "10 - ~
+#> $ bloco               <chr> "B1", "B2", "B3", "B1", "B2", "B3", "B1", "B2", "B~
+#> $ ds_kg_dm_3          <dbl> 1.600900, 1.497017, 1.561022, 1.611942, 1.616334, ~
+#> $ c_g_kg_1            <dbl> 8.8040, 8.9620, 8.7190, 6.6870, 6.4580, 5.9840, 4.~
+#> $ espessura_cm        <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~
+#> $ estoque_c           <dbl> 10.000000, 10.000000, 10.000000, 10.000000, 10.000~
+#> $ ds_referencia_cor   <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA, NA~
+#> $ estoque_ccor        <dbl> 14.094322, 13.416266, 13.610551, 10.779059, 10.438~
+```
+
+``` r
+estCpasto %>% 
+  group_by(ciclo, planta_de_cobertura, sps, profundidade, bloco) %>% 
+  summarise(
+    EstC = mean(estoque_ccor,na.rm = TRUE)
+    ) %>% 
+ mutate(
+   prof = case_when(
+      profundidade == "00 - 10" ~ "A", 
+      profundidade == "10 - 20" ~ "A",
+      profundidade == "10 -20" ~ "A",
+      profundidade == "0,0-0,05" ~ "A",
+      profundidade == "0,05-0,10" ~ "A",
+      profundidade == "0,10-0,20" ~ "A",
+      profundidade == "20 - 30" ~ "AB",
+      profundidade == "0,20-0,30" ~ "AB",
+      profundidade == "30 - 60" ~ "Bt",
+      profundidade == "0,30-0,70" ~ "Bt"
+    )
+  ) %>% 
+  group_by(ciclo, planta_de_cobertura, sps, bloco, prof) %>% 
+  summarise(EstC_s = sum(EstC,na.rm = TRUE)) %>% 
+  mutate(
+    EstC_s = ifelse(ciclo == 0 & prof == "Bt", EstC_s+5.83, EstC_s),
+    ciclo = case_when(ciclo == 0 ~ "Pasture",
+                      ciclo == 1 ~ "2015/16",
+                      ciclo == 2 ~ "2016/17",
+                      ciclo == 3 ~ "2017/18",
+                      ciclo == 4 ~ "2018/19",
+                      ciclo == 5 ~ "2019/20") %>% as_factor() 
+  ) %>% drop_na() %>% 
+  group_by(ciclo, prof) %>% 
+  summarise(
+    EstC_m = mean(EstC_s),
+    n=n(),
+    stde = sd(EstC_s)/n^.5
+  ) %>% 
+  ggplot(aes(x=ciclo, y=EstC_m, fill=prof)) +
+  geom_col(position="dodge",color="black") + 
+    scale_fill_viridis_d() +
+  theme_classic()+
+  geom_errorbar(aes(ymin=EstC_m, ymax=EstC_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  labs(x="", 
+       y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
+       fill = "Horizon")+
+    theme(legend.position = "bottom") +
+  geom_vline(xintercept = 1.5, lty=2, color="black", size=.7)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+
+``` r
+my_df <- estCpasto %>% 
+  group_by(ciclo, planta_de_cobertura, sps, profundidade, bloco) %>% 
+  summarise(
+    EstC = mean(estoque_ccor,na.rm = TRUE)
+    ) %>% 
+ mutate(
+   prof = case_when(
+      profundidade == "00 - 10" ~ "A", 
+      profundidade == "10 - 20" ~ "A",
+      profundidade == "10 -20" ~ "A",
+      profundidade == "0,0-0,05" ~ "A",
+      profundidade == "0,05-0,10" ~ "A",
+      profundidade == "0,10-0,20" ~ "A",
+      profundidade == "20 - 30" ~ "AB",
+      profundidade == "0,20-0,30" ~ "AB",
+      profundidade == "30 - 60" ~ "Bt",
+      profundidade == "0,30-0,70" ~ "Bt"
+    )
+  ) %>% 
+  group_by(ciclo, planta_de_cobertura, sps, bloco, prof) %>% 
+  summarise(EstC_s = sum(EstC,na.rm = TRUE)) %>% 
+  mutate(
+    EstC_s = ifelse(ciclo == 0 & prof == "Bt", EstC_s+5.83, EstC_s),
+    ciclo = case_when(ciclo == 0 ~ "Pasture",
+                      ciclo == 1 ~ "2015/16",
+                      ciclo == 2 ~ "2016/17",
+                      ciclo == 3 ~ "2017/18",
+                      ciclo == 4 ~ "2018/19",
+                      ciclo == 5 ~ "2019/20") %>% as_factor() 
+  ) %>% drop_na() %>% 
+  group_by(ciclo, prof, bloco) %>% 
+  summarise(
+    EstC_m = mean(EstC_s),
+    n=n(),
+    stde = sd(EstC_s)/n^.5
+  )
+glimpse(my_df)
+#> Rows: 54
+#> Columns: 6
+#> Groups: ciclo, prof [18]
+#> $ ciclo  <fct> Pasture, Pasture, Pasture, Pasture, Pasture, Pasture, Pasture, ~
+#> $ prof   <chr> "A", "A", "A", "AB", "AB", "AB", "Bt", "Bt", "Bt", "A", "A", "A~
+#> $ bloco  <chr> "B1", "B2", "B3", "B1", "B2", "B3", "B1", "B2", "B3", "B1", "B2~
+#> $ EstC_m <dbl> 24.873381, 23.854547, 23.244791, 7.841236, 9.561568, 9.596154, ~
+#> $ n      <int> 1, 1, 1, 1, 1, 1, 1, 1, 1, 13, 13, 13, 13, 13, 13, 13, 13, 13, ~
+#> $ stde   <dbl> NA, NA, NA, NA, NA, NA, NA, NA, NA, 0.5352421, 0.7975150, 0.471~
+
+prof <- my_df %>% pull(prof)
+ciclo <- my_df %>% pull(ciclo)
+bloco <- my_df %>% pull(bloco)
+y <- my_df %>% pull(EstC_m)
+
+ExpDes.pt::psub2.dbc(prof,ciclo,bloco,y,
+                     fac.names = c("prof","ciclo"))
+#> ------------------------------------------------------------------------
+#> Legenda:
+#> FATOR 1 (parcela):  prof 
+#> FATOR 2 (subparcela):  ciclo 
+#> ------------------------------------------------------------------------
+#> 
+#> ------------------------------------------------------------------------
+#> Quadro da analise de variancia
+#> ------------------------------------------------------------------------
+#>            GL     SQ      QM     Fc Pr(>Fc)    
+#> prof        2 3739.9 1869.94 5261.6  <2e-16 ***
+#> Bloco       2    1.6    0.82    2.3  0.2169    
+#> Erro a      4    1.4    0.36                   
+#> ciclo       5  138.1   27.63   29.2  <2e-16 ***
+#> prof*ciclo 10  100.5   10.05   10.6  <2e-16 ***
+#> Erro b     30   28.4    0.95                   
+#> Total      53 4010.0                           
+#> ---
+#> Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+#> ------------------------------------------------------------------------
+#> CV 1 = 3.101982 %
+#> CV 2 = 5.065258 %
+#> 
+#> 
+#> 
+#> Interacao significativa: desdobrando a interacao
+#> ------------------------------------------------------------------------
+#> 
+#> Desdobrando  prof  dentro de cada nivel de  ciclo 
+#> ------------------------------------------------------------------------
+#>                             GL        SQ         QM         Fc valor.p
+#> prof : ciclo Pasture   2.00000 557.73651 278.868253  328.49936       0
+#> prof : ciclo 2015/16   2.00000 429.76418 214.882092  253.12537       0
+#> prof : ciclo 2016/17   2.00000 699.79552 349.897759 412.170222       0
+#> prof : ciclo 2017/18   2.00000 712.36982 356.184910 419.576319       0
+#> prof : ciclo 2018/19   2.00000 753.88771 376.943855 444.029802       0
+#> prof : ciclo 2019/20   2.00000 686.81541 343.407705 404.525112       0
+#> Erro combinado        33.26557  28.23967   0.848916                   
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#>  prof dentro de ciclo Pasture
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     Bt      26.99837 
+#>  b    A   23.99091 
+#>   c   AB      8.999653 
+#> ------------------------------------------------------------------------
+#> 
+#>  prof dentro de ciclo 2015/16
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     Bt      24.19837 
+#>  b    A   15.475 
+#>   c   AB      7.274471 
+#> ------------------------------------------------------------------------
+#> 
+#>  prof dentro de ciclo 2016/17
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     Bt      30.40861 
+#>  b    A   20.75221 
+#>   c   AB      8.848311 
+#> ------------------------------------------------------------------------
+#> 
+#>  prof dentro de ciclo 2017/18
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     Bt      30.48601 
+#>  b    A   20.16401 
+#>   c   AB      8.703423 
+#> ------------------------------------------------------------------------
+#> 
+#>  prof dentro de ciclo 2018/19
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     Bt      31.35589 
+#>  b    A   19.10359 
+#>   c   AB      8.970746 
+#> ------------------------------------------------------------------------
+#> 
+#>  prof dentro de ciclo 2019/20
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     Bt      30.08013 
+#>  b    A   21.32657 
+#>   c   AB      8.793616 
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#> Desdobrando  ciclo  dentro de cada nivel de  prof 
+#> ------------------------------------------------------------------------
+#>                  GL         SQ        QM       Fc  valor.p
+#> ciclo : prof A    5 118.347172 23.669434 24.97777        0
+#> ciclo : prof AB   5   6.492083  1.298417 1.370187 0.263302
+#> ciclo : prof Bt   5 113.802671 22.760534 24.01863        0
+#> Erro b           30  28.428601  0.947620                  
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#>  ciclo dentro de prof A
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     Pasture     23.99091 
+#>  b    2019/20     21.32657 
+#>  b    2016/17     20.75221 
+#>  b    2017/18     20.16401 
+#>  b    2018/19     19.10359 
+#>   c   2015/16     15.475 
+#> ------------------------------------------------------------------------
+#> ------------------------------------------------------------------------
+#> 
+#> 
+#>  ciclo dentro de prof AB
+#> ------------------------------------------------------------------------
+#> De acordo com o teste F, as medias desse fator sao estatisticamente iguais.
+#> ------------------------------------------------------------------------
+#>    Niveis   Medias
+#> 1 2015/16 7.274471
+#> 2 2016/17 8.848311
+#> 3 2017/18 8.703423
+#> 4 2018/19 8.970746
+#> 5 2019/20 8.793616
+#> 6 Pasture 8.999653
+#> ------------------------------------------------------------------------
+#> 
+#>  ciclo dentro de prof Bt
+#> ------------------------------------------------------------------------
+#> Teste de Tukey
+#> ------------------------------------------------------------------------
+#> Grupos Tratamentos Medias
+#> a     2018/19     31.35589 
+#> a     2017/18     30.48601 
+#> a     2016/17     30.40861 
+#> a     2019/20     30.08013 
+#>  b    Pasture     26.99837 
+#>   c   2015/16     24.19837 
+#> ------------------------------------------------------------------------
+#> ------------------------------------------------------------------------
+```
+
 #### estoque de carbono, mostrar ao longo do tempo em função do sistema de preparo e depois pelo sistema de cobertura
 
 ``` r
@@ -244,7 +528,7 @@ atributos %>%
        fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% 
@@ -325,7 +609,7 @@ atributos %>%
   labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -348,7 +632,7 @@ atributos %>%
   labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -369,7 +653,7 @@ atributos %>%
                  position=position_dodge(.9))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-16-1.png)<!-- --> \####
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- --> \####
 densidade do solo/ carbono orgânico/ e possivelmente DMP
 
 ``` r
@@ -394,7 +678,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% filter(profundidade == "30_70") %>% 
@@ -590,7 +874,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -614,7 +898,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% filter(profundidade == "30_70") %>%  
@@ -812,7 +1096,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -836,7 +1120,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -860,7 +1144,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ### finalmente o HLIF ano 1 e 5 somente
 
@@ -967,7 +1251,7 @@ df_0a5 %>%
     stat_smooth(method = "lm", formula = y ~poly(x,1,raw=TRUE),se=FALSE)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 Tentativa de modelagem 0.05-0.10 m
 
@@ -1022,7 +1306,7 @@ df_5a10 %>%
   stat_smooth(method = "lm", formula = y ~poly(x,3,raw=TRUE),se=FALSE)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ``` r
 atr_c_1 <- atributos %>% filter(profundidade == "0_20", ciclo == 1,bloco != "b2") %>% 
@@ -1086,7 +1370,7 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-36-1.png)<!-- -->
 
 ``` r
 dfinal %>% 
@@ -1105,7 +1389,7 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
 ``` r
 dfinal %>% 
@@ -1124,4 +1408,4 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->

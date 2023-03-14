@@ -118,6 +118,7 @@ prod %>%
   scale_fill_viridis_d() +
   theme_classic()
 ```
+
 ```{r}
 prod %>% 
   group_by(sps, colheita) %>% 
@@ -128,6 +129,114 @@ prod %>%
   theme_classic()+
   theme(legend.position = "bottom")+
   labs(fill="")
+```
+
+
+#### Estoque de Carbono Pastagem
+
+```{r}
+estCpasto <- read_excel("data/estoque-pasto1.xlsx", na = "NA") %>% 
+  janitor::clean_names()
+glimpse(estCpasto)
+```
+
+
+```{r}
+estCpasto %>% 
+  group_by(ciclo, planta_de_cobertura, sps, profundidade, bloco) %>% 
+  summarise(
+    EstC = mean(estoque_ccor,na.rm = TRUE)
+    ) %>% 
+ mutate(
+   prof = case_when(
+      profundidade == "00 - 10" ~ "A", 
+      profundidade == "10 - 20" ~ "A",
+      profundidade == "10 -20" ~ "A",
+      profundidade == "0,0-0,05" ~ "A",
+      profundidade == "0,05-0,10" ~ "A",
+      profundidade == "0,10-0,20" ~ "A",
+      profundidade == "20 - 30" ~ "AB",
+      profundidade == "0,20-0,30" ~ "AB",
+      profundidade == "30 - 60" ~ "Bt",
+      profundidade == "0,30-0,70" ~ "Bt"
+    )
+  ) %>% 
+  group_by(ciclo, planta_de_cobertura, sps, bloco, prof) %>% 
+  summarise(EstC_s = sum(EstC,na.rm = TRUE)) %>% 
+  mutate(
+    EstC_s = ifelse(ciclo == 0 & prof == "Bt", EstC_s+5.83, EstC_s),
+    ciclo = case_when(ciclo == 0 ~ "Pasture",
+                      ciclo == 1 ~ "2015/16",
+                      ciclo == 2 ~ "2016/17",
+                      ciclo == 3 ~ "2017/18",
+                      ciclo == 4 ~ "2018/19",
+                      ciclo == 5 ~ "2019/20") %>% as_factor() 
+  ) %>% drop_na() %>% 
+  group_by(ciclo, prof) %>% 
+  summarise(
+    EstC_m = mean(EstC_s),
+    n=n(),
+    stde = sd(EstC_s)/n^.5
+  ) %>% 
+  ggplot(aes(x=ciclo, y=EstC_m, fill=prof)) +
+  geom_col(position="dodge",color="black") + 
+    scale_fill_viridis_d() +
+  theme_classic()+
+  geom_errorbar(aes(ymin=EstC_m, ymax=EstC_m+stde), width=.2,
+                 position=position_dodge(.9)) +
+  labs(x="", 
+       y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
+       fill = "Horizon")+
+    theme(legend.position = "bottom") +
+  geom_vline(xintercept = 1.5, lty=2, color="black", size=.7)
+``` 
+
+```{r}
+my_df <- estCpasto %>% 
+  group_by(ciclo, planta_de_cobertura, sps, profundidade, bloco) %>% 
+  summarise(
+    EstC = mean(estoque_ccor,na.rm = TRUE)
+    ) %>% 
+ mutate(
+   prof = case_when(
+      profundidade == "00 - 10" ~ "A", 
+      profundidade == "10 - 20" ~ "A",
+      profundidade == "10 -20" ~ "A",
+      profundidade == "0,0-0,05" ~ "A",
+      profundidade == "0,05-0,10" ~ "A",
+      profundidade == "0,10-0,20" ~ "A",
+      profundidade == "20 - 30" ~ "AB",
+      profundidade == "0,20-0,30" ~ "AB",
+      profundidade == "30 - 60" ~ "Bt",
+      profundidade == "0,30-0,70" ~ "Bt"
+    )
+  ) %>% 
+  group_by(ciclo, planta_de_cobertura, sps, bloco, prof) %>% 
+  summarise(EstC_s = sum(EstC,na.rm = TRUE)) %>% 
+  mutate(
+    EstC_s = ifelse(ciclo == 0 & prof == "Bt", EstC_s+5.83, EstC_s),
+    ciclo = case_when(ciclo == 0 ~ "Pasture",
+                      ciclo == 1 ~ "2015/16",
+                      ciclo == 2 ~ "2016/17",
+                      ciclo == 3 ~ "2017/18",
+                      ciclo == 4 ~ "2018/19",
+                      ciclo == 5 ~ "2019/20") %>% as_factor() 
+  ) %>% drop_na() %>% 
+  group_by(ciclo, prof, bloco) %>% 
+  summarise(
+    EstC_m = mean(EstC_s),
+    n=n(),
+    stde = sd(EstC_s)/n^.5
+  )
+glimpse(my_df)
+
+prof <- my_df %>% pull(prof)
+ciclo <- my_df %>% pull(ciclo)
+bloco <- my_df %>% pull(bloco)
+y <- my_df %>% pull(EstC_m)
+
+ExpDes.pt::psub2.dbc(prof,ciclo,bloco,y,
+                     fac.names = c("prof","ciclo"))
 ```
 
 
