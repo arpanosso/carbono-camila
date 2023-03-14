@@ -274,6 +274,32 @@ atributos %>%
        fill = "")
 ```
 
+
+```{r}
+atributos %>% 
+  group_by(ciclo,profundidade) %>% 
+  summarise(EstC = mean(est_c),
+            n = n(),
+            stde = sd(est_c)/sqrt(n)
+            ) %>% 
+  # group_by(ciclo, preparo) %>% 
+  # summarise(EstC = sum(EstC),
+  #           stde = sum(stde)
+  #           )  %>% 
+  ggplot(aes(x=ciclo, y=EstC, color=profundidade,
+             shape=profundidade)) +
+  #geom_col(position="dodge", color="black") +
+  #scale_fill_viridis_d() +
+  geom_line() +
+  geom_point() + 
+  theme_classic()+
+  # geom_errorbar(aes(ymin=EstC, ymax=EstC+stde), width=.2,
+  #                position=position_dodge(.9)) +
+  labs(x="Year", 
+       y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
+       fill = "")
+```
+
 ```{r}
 atrr <- atributos %>% 
   group_by(ciclo,cultura,preparo,bloco) %>% 
@@ -287,7 +313,8 @@ y <- atrr %>% pull(est_c)
 bloco <- atrr %>% pull(bloco)
 ciclo <- atrr %>% pull(ciclo)
 
-ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"))
+ExpDes.pt::psub2.dbc(trat,ciclo,bloco,y,fac.names = c("sps","ciclo"),
+                     sigF = 0.1, sigT=0.15)
 ```
 
 ```{r}
