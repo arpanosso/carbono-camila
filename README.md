@@ -61,7 +61,49 @@ clima %>% filter(ano > 2014) %>%
                                " Temperature" = "red"))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-4-1.png)<!-- --> tendencia de
+queda
+
+``` r
+clima %>% filter(ano >= 2018) %>% 
+  group_by(ano, mes) %>% 
+  summarise(prec = sum(precipitacoa,na.rm=TRUE)) %>% 
+  mutate(ano_mes = lubridate::make_date(ano,mes,1)) %>% 
+#  group_by(ano) %>% 
+#  summarise(prec = max(prec)) %>% 
+  ggplot(aes(x=ano_mes, y=prec)) +
+  geom_point()+
+  geom_smooth(method="lm")
+```
+
+![](README_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+
+``` r
+da <- clima %>% filter(ano >= 2018) %>% 
+  group_by(ano, mes) %>% 
+  summarise(prec = sum(precipitacoa,na.rm=TRUE)) %>% 
+  mutate(ano_mes = lubridate::make_date(ano,mes,1))
+
+summary(lm(prec ~ ano_mes, data=da))
+#> 
+#> Call:
+#> lm(formula = prec ~ ano_mes, data = da)
+#> 
+#> Residuals:
+#>     Min      1Q  Median      3Q     Max 
+#> -133.97  -62.87  -26.24   44.31  278.43 
+#> 
+#> Coefficients:
+#>               Estimate Std. Error t value Pr(>|t|)
+#> (Intercept) 1469.75671  956.81282   1.536    0.134
+#> ano_mes       -0.07553    0.05296  -1.426    0.163
+#> 
+#> Residual standard error: 100.5 on 34 degrees of freedom
+#> Multiple R-squared:  0.05644,    Adjusted R-squared:  0.02869 
+#> F-statistic: 2.034 on 1 and 34 DF,  p-value: 0.1629
+-0.07553*12
+#> [1] -0.90636
+```
 
 #### Gráfico da Produção mostrando a semelhança entre os SPS
 
@@ -102,7 +144,7 @@ prod %>%
                  position=position_dodge(.9))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 ``` r
 trat <- prod %>% pull(sps)
@@ -166,11 +208,20 @@ prod %>%
   ggplot(aes(x=as_factor(colheita), y=producao, fill=sps)) +
   geom_boxplot() +
   # facet_wrap(~sps)+
-  scale_fill_viridis_d() +
-  theme_classic()
+  # scale_fill_viridis_d() +
+  scale_fill_brewer(
+    type = "seq",
+    palette = 2,
+    direction = 1,
+    aesthetics = "fill"
+  ) +
+  theme_classic() +
+  labs(x="Cycle", y=expression(paste("Yield (t ",ha^{-1},")")),
+       fill = "") +
+  theme(legend.position = "bottom")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
 ``` r
 prod %>% 
@@ -184,7 +235,7 @@ prod %>%
   labs(fill="")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 #### Estoque de Carbono Pastagem
 
@@ -247,18 +298,33 @@ estCpasto %>%
   ) %>% 
   ggplot(aes(x=ciclo, y=EstC_m, fill=prof)) +
   geom_col(position="dodge",color="black") + 
-    scale_fill_viridis_d() +
+    # scale_fill_viridis_d() +
+    scale_fill_brewer(
+    palette = "YlOrBr"
+  ) +
   theme_classic()+
   geom_errorbar(aes(ymin=EstC_m, ymax=EstC_m+stde), width=.2,
                  position=position_dodge(.9)) +
-  labs(x="", 
+  labs(x="Use | Year", 
        y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
        fill = "Horizon")+
     theme(legend.position = "bottom") +
   geom_vline(xintercept = 1.5, lty=2, color="black", size=.7)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+``` r
+(21.32+20.75+20.16+19.10)/4
+#> [1] 20.3325
+( 31.35589 + 
+ 30.48601 + 
+ 30.40861 + 
+ 30.08013 )/4
+#> [1] 30.58266
+26.99837 -   24.19837 
+#> [1] 2.8
+```
 
 ``` r
 my_df <- estCpasto %>% 
@@ -470,6 +536,18 @@ ExpDes.pt::psub2.dbc(prof,ciclo,bloco,y,
 #> ------------------------------------------------------------------------
 ```
 
+``` r
+(66.23907 +
+64.40943 +
+60.2368 )/3
+#> [1] 63.62843
+66.23907- 55.44922 
+#> [1] 10.78985
+
+48.50428 - 61.71686 
+#> [1] -13.21258
+```
+
 #### estoque de carbono, mostrar ao longo do tempo em função do sistema de preparo e depois pelo sistema de cobertura
 
 ``` r
@@ -525,10 +603,11 @@ atributos %>%
                  position=position_dodge(.9)) +
   labs(x="Year", 
        y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
-       fill = "")
+       fill = "") +
+  theme(legend.position = "bottom")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -555,7 +634,7 @@ atributos %>%
        fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% 
@@ -754,7 +833,7 @@ atributos %>%
   labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -777,7 +856,7 @@ atributos %>%
   labs(x="Year", y="Soil Carbon Stock Mg ha", fill = "")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -798,11 +877,16 @@ atributos %>%
                  position=position_dodge(.9))
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-20-1.png)<!-- --> \####
+![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- --> \####
 densidade do solo/ carbono orgânico/ e possivelmente DMP
 
 ``` r
 atributos %>% 
+  mutate(profundidade = case_when(
+    profundidade == "0_20" ~ "0-0.20 m",
+    profundidade == "20_30" ~ "0.20-0.30 m",
+    profundidade == "30_70" ~ "0.30-0.70 m",
+  )) %>% 
   group_by(ciclo,preparo,profundidade) %>% 
   summarise(ds_m = mean(ds),
             n = n(),
@@ -814,16 +898,21 @@ atributos %>%
   #           )  %>% 
   ggplot(aes(x=ciclo, y=ds_m, fill=preparo)) +
   geom_col(positio = "dodge", color="black") +
-  scale_fill_viridis_d() +
+  scale_fill_brewer(
+    type="seq",
+    palette = 1
+  )  +
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
                  position=position_dodge(.9)) +
-  coord_cartesian(ylim=c(1.5,1.8))+
-  theme(legend.position = "top")
+  coord_cartesian(ylim=c(1.5,1.8)) +
+  labs(x="Cycle", y=expression(paste("Bulk Density (g  ",cm^{-3},")")),
+       fill="")+
+  theme(legend.position = "bottom")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% filter(profundidade == "30_70") %>% 
@@ -1010,7 +1099,10 @@ atributos %>%
   #           )  %>% 
   ggplot(aes(x=ciclo, y=ds_m, fill=cultura)) +
   geom_col(positio = "dodge", color="black") +
-  scale_fill_viridis_d() +
+    scale_fill_brewer(
+    type="div",
+    palette = 1
+  ) +
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
@@ -1019,10 +1111,15 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 ``` r
 atributos %>% 
+  mutate(profundidade = case_when(
+    profundidade == "0_20" ~ "0-0.20 m",
+    profundidade == "20_30" ~ "0.20-0.30 m",
+    profundidade == "30_70" ~ "0.30-0.70 m",
+  )) %>% 
   group_by(ciclo,preparo,profundidade) %>% 
   summarise(c_m = mean(c),
             n = n(),
@@ -1034,16 +1131,19 @@ atributos %>%
   #           )  %>% 
   ggplot(aes(x=ciclo, y=c_m, fill=preparo)) +
   geom_col(positio = "dodge", color="black") +
-  scale_fill_viridis_d() +
+    scale_fill_brewer(
+    type="div") + 
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=c_m, ymax=c_m+stde), width=.2,
                  position=position_dodge(.9)) +
   coord_cartesian(ylim=c(3.5,8))+
-  theme(legend.position = "top")
+  labs(x="Cycle", y=expression(paste("Soil Carbon (%)")),
+       fill="")+
+  theme(legend.position = "bottom")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
 
 ``` r
 atrr <- atributos %>% filter(profundidade == "30_70") %>%  
@@ -1241,7 +1341,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -1265,7 +1365,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 ``` r
 atributos %>% 
@@ -1289,7 +1389,7 @@ atributos %>%
   theme(legend.position = "top")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 ### finalmente o HLIF ano 1 e 5 somente
 
@@ -1396,7 +1496,7 @@ df_0a5 %>%
     stat_smooth(method = "lm", formula = y ~poly(x,1,raw=TRUE),se=FALSE)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
 
 Tentativa de modelagem 0.05-0.10 m
 
@@ -1451,7 +1551,7 @@ df_5a10 %>%
   stat_smooth(method = "lm", formula = y ~poly(x,3,raw=TRUE),se=FALSE)
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
 
 ``` r
 atr_c_1 <- atributos %>% filter(profundidade == "0_20", ciclo == 1,bloco != "b2") %>% 
@@ -1515,7 +1615,7 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-37-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 ``` r
 dfinal %>% 
@@ -1534,7 +1634,7 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-38-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
 
 ``` r
 dfinal %>% 
@@ -1553,4 +1653,4 @@ dfinal %>%
   labs(fill="",x="Ciclo")
 ```
 
-![](README_files/figure-gfm/unnamed-chunk-39-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->

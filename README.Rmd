@@ -73,7 +73,30 @@ clima %>% filter(ano > 2014) %>%
                     values = c(" Precipitation   " = "darkgrey",
                                " Temperature" = "red"))
 ```
+tendencia de queda
 
+```{r}
+clima %>% filter(ano >= 2018) %>% 
+  group_by(ano, mes) %>% 
+  summarise(prec = sum(precipitacoa,na.rm=TRUE)) %>% 
+  mutate(ano_mes = lubridate::make_date(ano,mes,1)) %>% 
+#  group_by(ano) %>% 
+#  summarise(prec = max(prec)) %>% 
+  ggplot(aes(x=ano_mes, y=prec)) +
+  geom_point()+
+  geom_smooth(method="lm")
+```
+
+```{r}
+da <- clima %>% filter(ano >= 2018) %>% 
+  group_by(ano, mes) %>% 
+  summarise(prec = sum(precipitacoa,na.rm=TRUE)) %>% 
+  mutate(ano_mes = lubridate::make_date(ano,mes,1))
+
+summary(lm(prec ~ ano_mes, data=da))
+-0.07553*12
+
+```
 
 
 #### Gráfico da Produção mostrando a semelhança entre os SPS
@@ -115,8 +138,17 @@ prod %>%
   ggplot(aes(x=as_factor(colheita), y=producao, fill=sps)) +
   geom_boxplot() +
   # facet_wrap(~sps)+
-  scale_fill_viridis_d() +
-  theme_classic()
+  # scale_fill_viridis_d() +
+  scale_fill_brewer(
+    type = "seq",
+    palette = 2,
+    direction = 1,
+    aesthetics = "fill"
+  ) +
+  theme_classic() +
+  labs(x="Cycle", y=expression(paste("Yield (t ",ha^{-1},")")),
+       fill = "") +
+  theme(legend.position = "bottom")
 ```
 
 ```{r}
@@ -180,16 +212,31 @@ estCpasto %>%
   ) %>% 
   ggplot(aes(x=ciclo, y=EstC_m, fill=prof)) +
   geom_col(position="dodge",color="black") + 
-    scale_fill_viridis_d() +
+    # scale_fill_viridis_d() +
+    scale_fill_brewer(
+    palette = "YlOrBr"
+  ) +
   theme_classic()+
   geom_errorbar(aes(ymin=EstC_m, ymax=EstC_m+stde), width=.2,
                  position=position_dodge(.9)) +
-  labs(x="", 
+  labs(x="Use | Year", 
        y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
        fill = "Horizon")+
     theme(legend.position = "bottom") +
   geom_vline(xintercept = 1.5, lty=2, color="black", size=.7)
 ``` 
+
+```{r}
+(21.32+20.75+20.16+19.10)/4
+( 31.35589 + 
+ 30.48601 + 
+ 30.40861 + 
+ 30.08013 )/4
+26.99837 -	 24.19837 
+
+```
+
+
 
 ```{r}
 my_df <- estCpasto %>% 
@@ -238,6 +285,14 @@ y <- my_df %>% pull(EstC_m)
 ExpDes.pt::psub2.dbc(prof,ciclo,bloco,y,
                      fac.names = c("prof","ciclo"))
 ```
+```{r}
+(66.23907 +
+64.40943 +
+60.2368 )/3
+66.23907- 55.44922 
+
+48.50428 - 61.71686 
+```
 
 
 #### estoque de carbono, mostrar ao longo do tempo em função do sistema de preparo e depois pelo sistema de cobertura 
@@ -271,7 +326,8 @@ atributos %>%
                  position=position_dodge(.9)) +
   labs(x="Year", 
        y=expression(paste("Soil Carbon Stock (Mg  ", ha^-1,")")), 
-       fill = "")
+       fill = "") +
+  theme(legend.position = "bottom")
 ```
 
 
@@ -381,6 +437,11 @@ atributos %>%
 
 ```{r}
 atributos %>% 
+  mutate(profundidade = case_when(
+    profundidade == "0_20" ~ "0-0.20 m",
+    profundidade == "20_30" ~ "0.20-0.30 m",
+    profundidade == "30_70" ~ "0.30-0.70 m",
+  )) %>% 
   group_by(ciclo,preparo,profundidade) %>% 
   summarise(ds_m = mean(ds),
             n = n(),
@@ -392,13 +453,18 @@ atributos %>%
   #           )  %>% 
   ggplot(aes(x=ciclo, y=ds_m, fill=preparo)) +
   geom_col(positio = "dodge", color="black") +
-  scale_fill_viridis_d() +
+  scale_fill_brewer(
+    type="seq",
+    palette = 1
+  )  +
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
                  position=position_dodge(.9)) +
-  coord_cartesian(ylim=c(1.5,1.8))+
-  theme(legend.position = "top")
+  coord_cartesian(ylim=c(1.5,1.8)) +
+  labs(x="Cycle", y=expression(paste("Bulk Density (g  ",cm^{-3},")")),
+       fill="")+
+  theme(legend.position = "bottom")
 ```
 
 ```{r}
@@ -431,7 +497,10 @@ atributos %>%
   #           )  %>% 
   ggplot(aes(x=ciclo, y=ds_m, fill=cultura)) +
   geom_col(positio = "dodge", color="black") +
-  scale_fill_viridis_d() +
+    scale_fill_brewer(
+    type="div",
+    palette = 1
+  ) +
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=ds_m, ymax=ds_m+stde), width=.2,
@@ -442,6 +511,11 @@ atributos %>%
 
 ```{r}
 atributos %>% 
+  mutate(profundidade = case_when(
+    profundidade == "0_20" ~ "0-0.20 m",
+    profundidade == "20_30" ~ "0.20-0.30 m",
+    profundidade == "30_70" ~ "0.30-0.70 m",
+  )) %>% 
   group_by(ciclo,preparo,profundidade) %>% 
   summarise(c_m = mean(c),
             n = n(),
@@ -453,13 +527,16 @@ atributos %>%
   #           )  %>% 
   ggplot(aes(x=ciclo, y=c_m, fill=preparo)) +
   geom_col(positio = "dodge", color="black") +
-  scale_fill_viridis_d() +
+    scale_fill_brewer(
+    type="div") + 
   facet_wrap(~profundidade,nrow=1) +
   theme_classic()+
   geom_errorbar(aes(ymin=c_m, ymax=c_m+stde), width=.2,
                  position=position_dodge(.9)) +
   coord_cartesian(ylim=c(3.5,8))+
-  theme(legend.position = "top")
+  labs(x="Cycle", y=expression(paste("Soil Carbon (%)")),
+       fill="")+
+  theme(legend.position = "bottom")
 ```
 
 
